@@ -1,7 +1,6 @@
 // OpenRelay V1 | NONFEDERATED
 // Written by Brenden2008
 // Hack the planet!
-
 const express = require('express')
 const bodyParser = require('body-parser');
 const querystring = require('querystring');
