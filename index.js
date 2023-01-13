@@ -26,9 +26,9 @@ const fedServices = {
         return username.split('*');
     },
     checkFedStatus: function (username){
-        var username = this.parseUsername(user)[0]
-        var server = this.parseUsername(user)[1]
-        axios.get('http://' + server + '/federationStatus')
+        var username = this.parseUsername(username)[0]
+        var server = this.parseUsername(username)[1]
+        axios.get('https://' + server + '/federationStatus')
           .then(function (response) {
             return response.data
           })
@@ -38,18 +38,21 @@ const fedServices = {
     },
     pushDataToServer: function (data, user){
         if (this.checkFedStatus(user) == false){
+            //console.log("fedstatusfail")
             return {err: "SERVER_DOESNT_ACCEPT_FEDERATION"}
         }
         var username = this.parseUsername(user)[0]
         var server = this.parseUsername(user)[1]
-        axios.post('http://' + server + '/postData', {
+        axios.post('https://' + server + '/postData', {
             deliverTo: username,
             data: data
           })
           .then(function (response) {
+            //console.log(response.data)
             return response.data
           })
           .catch(function (error) {
+            console.log(error)
             return error
           });
     },
@@ -59,7 +62,7 @@ const fedServices = {
         }
         var username = this.parseUsername(user)[0]
         var server = this.parseUsername(user)[1]
-        axios.get('http://' + server + '/acceptanceStatus', {
+        axios.get('https://' + server + '/acceptanceStatus', {
             params: {
                 id: id
             }
