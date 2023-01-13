@@ -74,23 +74,31 @@ const fedServices = {
 }
 
 app.post('/postData', async (req, res) => {
-    if(await ORRC.get(req.body.deliverTo) != null){
-        var insertedMessage = await ORIM.put({ deliverTo: req.body.deliverTo, data: req.body.data }, null, {
-            expireIn: 3600
-          });
-        res.status(201).json(insertedMessage);
+    if(fedServices.parseUsername(req.body.deliverTo)[1] != null){
+        res.status(201).json(fedServices.pushDataToServer(req.body.data, req.body.deliverTo))
     } else {
-        res.status(404).json({err: "CLIENT_NOT_FOUND"});
+        if(await ORRC.get(req.body.deliverTo) != null){
+            var insertedMessage = await ORIM.put({ deliverTo: req.body.deliverTo, data: req.body.data }, null, {
+                expireIn: 3600
+              });
+            res.status(201).json(insertedMessage);
+        } else {
+            res.status(404).json({err: "CLIENT_NOT_FOUND"});
+        }
     }
 })
 
 app.get('/acceptanceStatus', async (req, res) => {
-    const { id } = req.query;
-    if(await ORIM.get(id) != null){
-        var acceptStatus = await ORIM.get(id)
-        res.status(201).json(acceptStatus.accepted);
+    const { id, user } = req.query;
+    if(fedServices.parseUsername(user)[1] != null){
+        res.status(201).json(fedServices.queryAcceptanceStatus(user, id))
     } else {
-        res.status(404).json({err: "MESSAGE_NOT_FOUND"});
+        if(await ORIM.get(id) != null){
+            var acceptStatus = await ORIM.get(id)
+            res.status(201).json(acceptStatus.accepted);
+        } else {
+            res.status(404).json({err: "MESSAGE_NOT_FOUND"});
+        }
     }
 })
 
