@@ -1,4 +1,4 @@
-// OpenRelay V1 | NONFEDERATED
+// OpenRelay V1 | FEDERATED
 // Written by Brenden2008
 // Hack the planet!
 const express = require('express')
@@ -6,6 +6,11 @@ const bodyParser = require('body-parser');
 const querystring = require('querystring');
 const { Deta } = require('deta');
 const crypto = require('crypto')
+const axios = require('axios');
+
+const settings = {
+    fedEnabled: true
+}
 
 const app = express()
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -14,7 +19,59 @@ const deta = Deta();
 const ORIM = deta.Base('OR_INCOMINGMESSAGES');
 const ORRC = deta.Base('OR_REGISTEREDCLIENTS');
 
-app.get('/', (req, res) => res.send('OpenRelay V1 | NONFEDERATED'))
+app.get('/', (req, res) => res.send('OpenRelay V1 | FEDERATED'))
+
+const fedServices = {
+    parseUsername: function (username){
+        return username.split('*');
+    },
+    checkFedStatus: function (username){
+        var username = this.parseUsername(user)[0]
+        var server = this.parseUsername(user)[1]
+        axios.get('http://' + server + '/federationStatus')
+          .then(function (response) {
+            return response.data
+          })
+          .catch(function (error) {
+            return error
+          });
+    },
+    pushDataToServer: function (data, user){
+        if (this.checkFedStatus(user) == false){
+            return {err: "SERVER_DOESNT_ACCEPT_FEDERATION"}
+        }
+        var username = this.parseUsername(user)[0]
+        var server = this.parseUsername(user)[1]
+        axios.post('http://' + server + '/postData', {
+            deliverTo: username,
+            data: data
+          })
+          .then(function (response) {
+            return response.data
+          })
+          .catch(function (error) {
+            return error
+          });
+    },
+    queryAcceptanceStatus: function (user, id){
+        if (this.checkFedStatus(user) == false){
+            return {err: "SERVER_DOESNT_ACCEPT_FEDERATION"}
+        }
+        var username = this.parseUsername(user)[0]
+        var server = this.parseUsername(user)[1]
+        axios.get('http://' + server + '/acceptanceStatus', {
+            params: {
+                id: id
+            }
+          })
+          .then(function (response) {
+            return response.data
+          })
+          .catch(function (error) {
+            return error
+          });
+    }
+}
 
 app.post('/postData', async (req, res) => {
     if(await ORRC.get(req.body.deliverTo) != null){
@@ -35,6 +92,10 @@ app.get('/acceptanceStatus', async (req, res) => {
     } else {
         res.status(404).json({err: "MESSAGE_NOT_FOUND"});
     }
+})
+
+app.get('/federationStatus', async (req, res) => {
+    res.status(201).json(settings.fedEnabled);
 })
 
 app.get('/getData', async (req, res) => {
